@@ -306,29 +306,25 @@ impl FlashNomicBertModel {
             match self.pool {
                 // CLS pooling
                 Pool::Cls => {
-                    if batch_size > 1 {
-                        // Get the indices of the cls tokens from cu_seqlens
-                        let mut cls_indices = cu_seqlens.narrow(0, 0, batch_size)?;
+                    // Get the indices of the cls tokens from cu_seqlens
+                    let mut cls_indices = cu_seqlens.narrow(0, 0, batch_size)?;
 
-                        // If raw_indices is empty, we don't need to do anything with
-                        // the pooled_indices
-                        if has_raw_requests {
-                            // We need the pooled indices to select the correct cls indices
-                            let pooled_indices = Tensor::from_vec(
-                                batch.pooled_indices.clone(),
-                                batch.pooled_indices.len(),
-                                &self.device,
-                            )?;
+                    // If raw_indices is empty, we don't need to do anything with
+                    // the pooled_indices
+                    if has_raw_requests {
+                        // We need the pooled indices to select the correct cls indices
+                        let pooled_indices = Tensor::from_vec(
+                            batch.pooled_indices.clone(),
+                            batch.pooled_indices.len(),
+                            &self.device,
+                        )?;
 
-                            // Only select indices that requires pooling
-                            cls_indices = cls_indices.index_select(&pooled_indices, 0)?
-                        }
-
-                        // Select cls tokens
-                        Some(outputs.index_select(&cls_indices, 0)?)
-                    } else {
-                        Some(outputs.i(0)?)
+                        // Only select indices that requires pooling
+                        cls_indices = cls_indices.index_select(&pooled_indices, 0)?
                     }
+
+                    // Select cls tokens
+                    Some(outputs.index_select(&cls_indices, 0)?)
                 }
                 // Mean pooling
                 Pool::Mean => {
